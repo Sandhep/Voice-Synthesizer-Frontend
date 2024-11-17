@@ -4,7 +4,6 @@ import TextInput from '../components/TextInput';
 import DownloadButton from '../components/DownloadButton';
 import { supabase } from '../supabaseClient';
 import axios from 'axios';
-import '../styles/globals.css';
 
 export default function Home() {
   const [file, setFile] = useState(null);
