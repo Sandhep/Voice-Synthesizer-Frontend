@@ -4,12 +4,13 @@ import TextInput from '../components/TextInput';
 import DownloadButton from '../components/DownloadButton';
 import { supabase } from '../supabaseClient';
 import axios from 'axios';
-import '../styles/globals.css'
+import '../styles/globals.css';
 
 export default function Home() {
   const [file, setFile] = useState(null);
   const [text, setText] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
+  const [loading, setLoading] = useState(false); // Added loading state
 
   const handleSynthesize = async () => {
     if (!file || !text) {
@@ -17,21 +18,18 @@ export default function Home() {
       return;
     }
 
+    setLoading(true); // Start loading state
+
     try {
-      // Upload the file to Supabase
-      const { data, error } = await supabase.storage
-        .from('voice-files')
-        .upload(`uploads/${file.name}`, file);
-
-      if (error) throw error;
-
-      const fileUrl = supabase.storage.from('voice-files').getPublicUrl(data.path).data.publicUrl;
-
       // Send the file URL and text to the backend API for synthesis
-      const response = await axios.post('/api/synthesize', { fileUrl, text });
-      setDownloadUrl(response.data.synthesizedFileUrl);
+      const response = await axios.post(`${process.env.API_URL}/api/synthesize`, { text });
+
+      // Set the synthesized file URL received from the backend
+      setDownloadUrl(response.data.audioUrl); // Assuming backend returns an audio URL
     } catch (error) {
       console.error('Error during synthesis:', error.message);
+    } finally {
+      setLoading(false); // End loading state
     }
   };
 
@@ -43,14 +41,22 @@ export default function Home() {
           Upload a voice file, type your desired text, and create magic!
         </p>
         <div className="space-y-4">
+          {/* File Uploader component */}
           <FileUploader onFileSelect={setFile} />
+
+          {/* Text Input component */}
           <TextInput text={text} setText={setText} />
+
+          {/* Synthesize button */}
           <button
             onClick={handleSynthesize}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition"
+            disabled={loading} // Disable while loading
           >
-            Synthesize Voice
+            {loading ? 'Processing...' : 'Synthesize Voice'}
           </button>
+
+          {/* Download button */}
           {downloadUrl && <DownloadButton downloadUrl={downloadUrl} />}
         </div>
       </div>
